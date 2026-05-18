@@ -1,0 +1,323 @@
+{
+  "id": "dnd_campaign_manager",
+  "name": "D&D Campaign Manager",
+  "version": "1.0.0",
+  "description": "Schedule sessions, track RSVPs, post recaps, and organize campaign notes — for D&D, Pathfinder, and any tabletop campaign run on Discord.",
+  "author": "MMO Maid",
+  "license": "MIT",
+  "capabilities_required": [
+    "storage:sql",
+    "storage:kv",
+    "discord:send_message",
+    "discord:edit_message",
+    "discord:delete_message",
+    "discord:read",
+    "interaction:respond"
+  ],
+  "proxy_domains_requested": [],
+  "slash_commands": [
+    {
+      "name": "campaign",
+      "description": "Manage your tabletop campaign",
+      "options": [
+        {
+          "type": 1,
+          "name": "create",
+          "description": "Create a new campaign"
+        },
+        {
+          "type": 1,
+          "name": "settings",
+          "description": "Configure campaign channels, roles, and reminders",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "info",
+          "description": "Show campaign overview, next session, and party",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "session",
+      "description": "Schedule and manage campaign sessions",
+      "options": [
+        {
+          "type": 1,
+          "name": "schedule",
+          "description": "Schedule a new session",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "List campaign sessions",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            },
+            {
+              "type": 3,
+              "name": "scope",
+              "description": "Which sessions to show",
+              "required": false,
+              "choices": [
+                {"name": "Upcoming", "value": "upcoming"},
+                {"name": "Past", "value": "past"},
+                {"name": "All", "value": "all"}
+              ]
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "cancel",
+          "description": "Cancel an upcoming session",
+          "options": [
+            {
+              "type": 4,
+              "name": "session_id",
+              "description": "Session ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "recap",
+          "description": "Create or post a session recap",
+          "options": [
+            {
+              "type": 4,
+              "name": "session_id",
+              "description": "Session ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "attendance",
+          "description": "Record who actually attended a session",
+          "options": [
+            {
+              "type": 4,
+              "name": "session_id",
+              "description": "Session ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "quest",
+      "description": "Manage the campaign quest log",
+      "options": [
+        {
+          "type": 1,
+          "name": "add",
+          "description": "Add a new quest",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "update",
+          "description": "Update or close a quest",
+          "options": [
+            {
+              "type": 4,
+              "name": "quest_id",
+              "description": "Quest ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "Show quests",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            },
+            {
+              "type": 3,
+              "name": "status",
+              "description": "Filter by status",
+              "required": false,
+              "choices": [
+                {"name": "Active", "value": "active"},
+                {"name": "Completed", "value": "completed"},
+                {"name": "Failed", "value": "failed"},
+                {"name": "Abandoned", "value": "abandoned"}
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "npc",
+      "description": "Track NPCs and campaign lore",
+      "options": [
+        {
+          "type": 1,
+          "name": "add",
+          "description": "Add a new NPC",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "Show NPCs (DM-only entries are hidden from players)",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "party",
+      "description": "Manage the party roster",
+      "options": [
+        {
+          "type": 1,
+          "name": "add",
+          "description": "Add a player to the party",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            },
+            {
+              "type": 6,
+              "name": "user",
+              "description": "Player to add",
+              "required": true
+            },
+            {
+              "type": 3,
+              "name": "character_name",
+              "description": "Character name",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "remove",
+          "description": "Remove a player from the party",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            },
+            {
+              "type": 6,
+              "name": "user",
+              "description": "Player to remove",
+              "required": true
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "Show the party roster",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "dmnotes",
+      "description": "DM-only campaign notes — replies are always private",
+      "options": [
+        {
+          "type": 1,
+          "name": "add",
+          "description": "Add a DM-only note",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "list",
+          "description": "List DM-only notes",
+          "options": [
+            {
+              "type": 4,
+              "name": "campaign_id",
+              "description": "Campaign ID (omit to pick from a menu)",
+              "required": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
