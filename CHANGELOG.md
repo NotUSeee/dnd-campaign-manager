@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 — Manifest fix
+
+- Reorder `/party add` and `/party remove` options so the required `user`
+  parameter comes before the optional ones. Discord rejects any slash
+  command where required options are listed after non-required ones, and
+  the rejection failed the bulk command sync for the whole guild — so
+  none of the plugin's commands were appearing.
+
 ## 1.0.0 — Initial release
 
 First public release of D&D Campaign Manager.
