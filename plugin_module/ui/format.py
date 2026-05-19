@@ -1,12 +1,22 @@
 """Pure formatting helpers shared by embeds and handlers."""
 from datetime import datetime, timezone
-from typing import Iterable, List
+from typing import Any, Iterable, List
 
-from plugin_module.core.time_util import discord_timestamp, discord_timestamp_relative
+from plugin_module.core.time_util import (
+    discord_timestamp,
+    discord_timestamp_relative,
+    parse_iso_dt,
+)
 
 
-def render_dt(dt: datetime, *, style: str = "F") -> str:
-    """Render a UTC datetime as a Discord auto-localized timestamp tag."""
+def render_dt(dt: Any, *, style: str = "F") -> str:
+    """Render a UTC datetime as a Discord auto-localized timestamp tag.
+
+    Accepts datetime, ISO 8601 string, or None — the platform returns
+    timestamps as ISO strings so any embed builder reading a row column
+    directly will see a string.
+    """
+    dt = parse_iso_dt(dt) if not isinstance(dt, datetime) else dt
     if dt is None:
         return "—"
     if dt.tzinfo is None:
@@ -14,7 +24,8 @@ def render_dt(dt: datetime, *, style: str = "F") -> str:
     return discord_timestamp(dt, style=style)
 
 
-def render_dt_relative(dt: datetime) -> str:
+def render_dt_relative(dt: Any) -> str:
+    dt = parse_iso_dt(dt) if not isinstance(dt, datetime) else dt
     if dt is None:
         return "—"
     if dt.tzinfo is None:

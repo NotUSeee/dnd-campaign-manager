@@ -293,7 +293,13 @@ def set_next_reminder_due_at(ctx, session_id: int, next_due: Optional[datetime])
 
 
 def _coerce_session(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Decode the JSONB recurrence_rule column from a string if needed."""
+    """Coerce JSON-safe row values back into Python types.
+
+    Platform SQL surface returns ``TIMESTAMPTZ`` as ISO strings and JSONB
+    as parsed structures (sometimes as strings if not auto-decoded). We
+    materialize the ``recurrence_rule`` dict and convert the timestamp
+    columns we do arithmetic on into UTC-aware ``datetime`` objects.
+    """
     if not row:
         return None
     rule = row.get("recurrence_rule")
@@ -302,7 +308,8 @@ def _coerce_session(row: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
             row["recurrence_rule"] = json.loads(rule)
         except (ValueError, TypeError):
             row["recurrence_rule"] = None
-    starts_at = row.get("starts_at")
-    if isinstance(starts_at, datetime) and starts_at.tzinfo is None:
-        row["starts_at"] = starts_at.replace(tzinfo=timezone.utc)
+    from plugin_module.core.time_util import parse_iso_dt
+    for col in ("starts_at", "next_reminder_due_at", "created_at", "updated_at"):
+        if col in row:
+            row[col] = parse_iso_dt(row[col])
     return row

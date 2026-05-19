@@ -67,18 +67,41 @@ def parse_date_time_local(date_str: str, time_str: str, tz_name: str) -> Optiona
         return None
 
 
-def to_unix(dt: datetime) -> int:
+def to_unix(dt) -> int:
+    """Convert a datetime or ISO 8601 string to a UNIX timestamp."""
+    if not isinstance(dt, datetime):
+        # Lazy-import to avoid forward-reference issues
+        dt = _parse_iso_dt_local(dt)
+    if dt is None:
+        return 0
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return int(dt.timestamp())
 
 
-def discord_timestamp(dt: datetime, style: str = "F") -> str:
-    """Render a datetime as Discord's auto-localized timestamp marker."""
-    return f"<t:{to_unix(dt)}:{style}>"
+def _parse_iso_dt_local(v):
+    """Inline mirror of parse_iso_dt() so to_unix can call it without ordering."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, str):
+        try:
+            s = v.rstrip("Z") + "+00:00" if v.endswith("Z") else v
+            dt = datetime.fromisoformat(s)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+    return None
 
 
-def discord_timestamp_relative(dt: datetime) -> str:
+def discord_timestamp(dt, style: str = "F") -> str:
+    """Render a datetime (or ISO 8601 string) as Discord's auto-localized timestamp marker."""
+    unix = to_unix(dt)
+    if not unix:
+        return "—"
+    return f"<t:{unix}:{style}>"
+
+
+def discord_timestamp_relative(dt) -> str:
     return discord_timestamp(dt, "R")
 
 
@@ -173,6 +196,33 @@ def _add_months_same_day(dt: datetime, months: int) -> datetime:
 
 def now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def parse_iso_dt(v: Any) -> Optional[datetime]:
+    """Parse an ISO 8601 string into a UTC-aware datetime. Idempotent.
+
+    Plugin SQL results come back with ``TIMESTAMPTZ`` columns serialized as
+    ISO strings (the platform's sandbox SQL layer converts to JSON-safe
+    types before responding). Any code path that needs to do arithmetic on
+    those values must coerce them back to ``datetime`` first. This helper
+    accepts both forms so call sites don't need to branch.
+
+    Returns ``None`` on empty input or unparseable strings.
+    """
+    if v is None or v == "":
+        return None
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    if isinstance(v, str):
+        try:
+            # ``Z`` suffix isn't accepted by fromisoformat in older Pythons —
+            # normalize to ``+00:00`` for safety.
+            s = v.rstrip("Z") + "+00:00" if v.endswith("Z") else v
+            dt = datetime.fromisoformat(s)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+    return None
 
 
 def next_date_matching_weekday(

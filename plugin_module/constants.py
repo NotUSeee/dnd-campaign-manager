@@ -1,7 +1,7 @@
 """Plugin-wide constants. Versioned custom_id prefix lives here."""
 
 PLUGIN_ID = "dnd_campaign_manager"
-PLUGIN_VERSION = "1.0.5"
+PLUGIN_VERSION = "1.0.6"
 
 CUSTOM_ID_PREFIX = "dnd_v1"
 

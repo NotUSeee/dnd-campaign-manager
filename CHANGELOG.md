@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.6 — Tolerate ISO date strings from platform SQL results
+
+The platform's SQL surface returns ``TIMESTAMPTZ`` columns as ISO 8601
+strings over JSON-RPC (raw Python ``datetime`` objects aren't JSON-
+serializable). Any code path that received a row directly and did
+arithmetic on a timestamp column was breaking after the previous fix
+landed end-to-end.
+
+- ``core/time_util.parse_iso_dt(v)`` — idempotent coercer: passes
+  ``datetime`` through, parses ISO strings to UTC-aware ``datetime``,
+  returns ``None`` on empty / unparseable input.
+- ``core/time_util.to_unix`` + ``discord_timestamp`` now accept either
+  form, so embed builders don't have to coerce ahead of every call.
+- ``storage/sessions._coerce_session`` now parses ``starts_at``,
+  ``next_reminder_due_at``, ``created_at``, ``updated_at`` back to
+  ``datetime`` so the reminder dispatcher's arithmetic works correctly.
+- ``ui/format.render_dt`` / ``render_dt_relative`` accept strings too.
+
+Pairs with a platform patch converting ``datetime`` / ``date`` / ``time``
+/ ``Decimal`` columns to JSON-safe strings inside
+``plugin_sql_query_with_meta`` so the result-size check + downstream
+JSON-RPC framing don't trip on unserializable values.
+
 ## 1.0.5 — Replace INSERT…RETURNING with INSERT-then-SELECT
 
 The MMO Maid sandbox SQL surface splits writes (``plugin_sql_execute`` —
