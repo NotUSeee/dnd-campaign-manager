@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2 — Subcommand dispatch fix
+
+- `core/option_reader.get_subcommand` no longer requires Discord's
+  `type: 1` field on the subcommand option. Some delivery paths from
+  discord.py were omitting that field, causing every `/campaign create`,
+  `/session schedule`, etc. invocation to fall through to "Unknown
+  subcommand." The function now identifies subcommands by the absence
+  of a `value` field, which is the actual invariant.
+- Added defensive tests covering the type-missing case.
+- Added a one-line warning log in the campaign dispatcher to surface
+  the raw options shape if anything still slips through.
+
 ## 1.0.1 — Manifest fix
 
 - Reorder `/party add` and `/party remove` options so the required `user`

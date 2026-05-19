@@ -9,24 +9,47 @@ from typing import Any, Dict, List, Optional
 
 
 def get_subcommand(event: Dict[str, Any]) -> Optional[str]:
-    """Return the subcommand name, or None."""
+    """Return the subcommand name, or None.
+
+    A subcommand option in Discord's interaction data is identified by the
+    absence of a ``value`` field — regular parameter options always carry
+    one. We rely on that invariant instead of the ``type`` field because
+    discord.py's data dict has been observed to omit the SUB_COMMAND
+    ``type: 1`` marker in some delivery paths, breaking a type-based check.
+    """
     options = event.get("options") or []
     if not options:
         return None
     first = options[0]
-    # type 1 = SUB_COMMAND, type 2 = SUB_COMMAND_GROUP (we don't use groups currently)
-    if isinstance(first, dict) and first.get("type") in (1, 2) and first.get("name"):
-        return str(first["name"])
+    if not isinstance(first, dict):
+        return None
+    name = first.get("name")
+    if not name:
+        return None
+    # SUB_COMMAND / SUB_COMMAND_GROUP — explicit type wins when present
+    if first.get("type") in (1, 2):
+        return str(name)
+    # Defensive fallback: a regular parameter option always has `value`.
+    # If there's no `value`, this is a subcommand even if `type` is missing.
+    if "value" not in first:
+        return str(name)
     return None
 
 
 def _subcommand_options(event: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Return the inner options list belonging to the (sub)command."""
+    """Return the inner options list belonging to the (sub)command.
+
+    Mirrors the heuristic in ``get_subcommand``: if the first option lacks
+    a ``value`` field, treat it as a subcommand wrapper and descend into
+    its ``options``.
+    """
     options = event.get("options") or []
     if not options:
         return []
     first = options[0]
-    if isinstance(first, dict) and first.get("type") in (1, 2):
+    if not isinstance(first, dict):
+        return options
+    if first.get("type") in (1, 2) or "value" not in first:
         return first.get("options") or []
     return options
 

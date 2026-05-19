@@ -29,6 +29,15 @@ def handle_campaign(ctx, event):
         return _campaign_settings(ctx, event)
     if sub == "info":
         return _campaign_info(ctx, event)
+    # Diagnostic — if the heuristic still misses, log the raw shape so we
+    # can see what Discord/discord.py actually delivered.
+    try:
+        ctx.log(
+            f"/campaign: unknown subcommand sub={sub!r} options={event.get('options')!r}",
+            level="warning", tags=["campaign", "dispatch"],
+        )
+    except Exception:
+        pass
     ctx.interaction.respond(content="Unknown subcommand.", ephemeral=True)
 
 

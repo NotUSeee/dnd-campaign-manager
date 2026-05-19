@@ -7,9 +7,37 @@ def test_get_subcommand():
     assert option_reader.get_subcommand(event) == "create"
 
 
+def test_get_subcommand_without_type_field():
+    """Some Discord delivery paths omit type:1 on a subcommand with no params."""
+    event = {"options": [{"name": "create"}]}
+    assert option_reader.get_subcommand(event) == "create"
+
+
+def test_get_subcommand_with_nested_options_no_type():
+    """Subcommand with nested options but missing the type field."""
+    event = {"options": [{"name": "settings", "options": [
+        {"name": "campaign_id", "type": 4, "value": 42}
+    ]}]}
+    assert option_reader.get_subcommand(event) == "settings"
+
+
+def test_get_subcommand_returns_none_for_value_carrying_option():
+    """A regular parameter (has `value`) is NOT a subcommand."""
+    event = {"options": [{"name": "arg", "type": 3, "value": "x"}]}
+    assert option_reader.get_subcommand(event) is None
+
+
 def test_get_subcommand_none_when_no_options():
     assert option_reader.get_subcommand({}) is None
     assert option_reader.get_subcommand({"options": []}) is None
+
+
+def test_get_option_int_works_when_subcommand_missing_type():
+    """_subcommand_options must also fall back when type is absent."""
+    event = {"options": [{"name": "settings", "options": [
+        {"name": "campaign_id", "type": 4, "value": "42"}
+    ]}]}
+    assert option_reader.get_option_int(event, "campaign_id") == 42
 
 
 def test_get_option_int_extracts_value():
