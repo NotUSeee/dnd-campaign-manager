@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.5 — Replace INSERT…RETURNING with INSERT-then-SELECT
+
+The MMO Maid sandbox SQL surface splits writes (``plugin_sql_execute`` —
+returns rowcount only) from reads (``plugin_sql_query`` — SELECT only).
+``INSERT … RETURNING`` is not supported through either path, so every
+storage layer ``create_X`` function that relied on it raised
+``RuntimeError: plugin_sql_query only accepts SELECT statements`` when
+called.
+
+Refactored all 7 INSERT…RETURNING sites to the two-step pattern: INSERT
+via ``ctx.sql.execute``, then SELECT-back via ``ctx.sql.query_one`` using
+the table's natural unique key (campaign name, recap session_id,
+attendance pk, etc.) or ``(campaign_id, user_id) ORDER BY id DESC LIMIT 1``
+for tables without a natural unique key.
+
+Race window between INSERT and SELECT is theoretical for single-DM
+workflows (campaigns/sessions/quests/etc. are slow human-driven actions)
+but worth knowing about for future high-concurrency features.
+
+Files touched: storage/campaigns.py, storage/sessions.py, storage/recaps.py,
+storage/quests.py, storage/npcs.py, storage/notes.py.
+
 ## 1.0.4 — Fall back to legacy `command_options` key
 
 The MMO Maid platform's `meta_only` privacy filter (the default for

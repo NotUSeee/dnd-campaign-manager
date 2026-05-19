@@ -17,15 +17,13 @@ def create_quest(
 ) -> Optional[Dict[str, Any]]:
     if visibility not in VALID_VISIBILITIES:
         visibility = "public"
-    rows = ctx.sql.query(
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_quests (
             campaign_id, discord_srv_id, title, description,
             visibility, added_by_user_id
         )
         VALUES (%s, %s, %s, %s, %s, %s)
-        RETURNING id, campaign_id, discord_srv_id, title, description,
-                  status, visibility, added_by_user_id, created_at, updated_at
         """,
         [
             int(campaign_id),
@@ -36,7 +34,18 @@ def create_quest(
             int(added_by_user_id),
         ],
     )
-    return rows[0] if rows else None
+    if not affected:
+        return None
+    return ctx.sql.query_one(
+        """
+        SELECT id, campaign_id, discord_srv_id, title, description,
+               status, visibility, added_by_user_id, created_at, updated_at
+          FROM dnd_quests
+         WHERE campaign_id = %s AND added_by_user_id = %s AND title = %s
+         ORDER BY id DESC LIMIT 1
+        """,
+        [int(campaign_id), int(added_by_user_id), str(title)[:200]],
+    )
 
 
 def get_quest(ctx, quest_id: int) -> Optional[Dict[str, Any]]:
@@ -94,18 +103,27 @@ def update_quest_status(ctx, quest_id: int, status: str) -> int:
 def append_update(
     ctx, *, quest_id: int, update_text: str, author_user_id: str
 ) -> Optional[Dict[str, Any]]:
-    rows = ctx.sql.query(
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_quest_updates (quest_id, update_text, author_user_id)
         VALUES (%s, %s, %s)
-        RETURNING id, quest_id, update_text, author_user_id, created_at
         """,
         [int(quest_id), str(update_text)[:2000], int(author_user_id)],
     )
+    if not affected:
+        return None
     ctx.sql.execute(
         "UPDATE dnd_quests SET updated_at = NOW() WHERE id = %s", [int(quest_id)]
     )
-    return rows[0] if rows else None
+    return ctx.sql.query_one(
+        """
+        SELECT id, quest_id, update_text, author_user_id, created_at
+          FROM dnd_quest_updates
+         WHERE quest_id = %s AND author_user_id = %s
+         ORDER BY id DESC LIMIT 1
+        """,
+        [int(quest_id), int(author_user_id)],
+    )
 
 
 def list_updates_for_quest(ctx, quest_id: int, *, limit: int = 25) -> List[Dict[str, Any]]:

@@ -28,7 +28,10 @@ def create_session(
         """,
         [int(campaign_id)],
     )
-    rows = ctx.sql.query(
+    # INSERT then SELECT-back (platform's sql.query rejects INSERT…RETURNING).
+    # Identify the just-inserted row by (campaign_id, starts_at, created_by_user_id)
+    # — same DM can't double-book the exact same start moment in the same campaign.
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_sessions (
             campaign_id, discord_srv_id, session_number, title,
@@ -37,11 +40,6 @@ def create_session(
             next_reminder_due_at, created_by_user_id
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id, campaign_id, discord_srv_id, session_number, title,
-                  notes_for_players, starts_at, duration_minutes, status,
-                  announce_channel_id, announce_message_id, series_id,
-                  recurrence_rule, next_reminder_due_at, reminder_offsets_sent,
-                  created_by_user_id, created_at, updated_at
         """,
         [
             int(campaign_id),
@@ -58,7 +56,23 @@ def create_session(
             int(created_by_user_id),
         ],
     )
-    return rows[0] if rows else None
+    if not affected:
+        return None
+    row = ctx.sql.query_one(
+        """
+        SELECT id, campaign_id, discord_srv_id, session_number, title,
+               notes_for_players, starts_at, duration_minutes, status,
+               announce_channel_id, announce_message_id, series_id,
+               recurrence_rule, next_reminder_due_at, reminder_offsets_sent,
+               created_by_user_id, created_at, updated_at
+          FROM dnd_sessions
+         WHERE campaign_id = %s AND starts_at = %s AND created_by_user_id = %s
+         ORDER BY id DESC
+         LIMIT 1
+        """,
+        [int(campaign_id), starts_at, int(created_by_user_id)],
+    )
+    return _coerce_session(row)
 
 
 def get_session(ctx, session_id: int) -> Optional[Dict[str, Any]]:

@@ -12,15 +12,19 @@ def create_campaign(
     description: str = "",
     timezone: str = "UTC",
 ) -> Optional[Dict[str, Any]]:
-    """Insert a campaign + default settings row. Returns the new campaign dict, or None on conflict."""
-    rows = ctx.sql.query(
+    """Insert a campaign + default settings row. Returns the new campaign dict, or None on conflict.
+
+    Two-step pattern because the platform's ``plugin_sql_query`` rejects
+    ``INSERT … RETURNING`` (SELECT-only) and ``plugin_sql_execute`` only
+    returns a rowcount. We INSERT then SELECT back using the unique
+    ``(discord_srv_id, LOWER(name))`` index for active campaigns.
+    """
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_campaigns
             (discord_srv_id, name, party_name, system, description, timezone, owner_user_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT DO NOTHING
-        RETURNING id, discord_srv_id, name, party_name, system, description,
-                  timezone, owner_user_id, status, created_at, updated_at
         """,
         [
             int(ctx.server_id),
@@ -32,9 +36,19 @@ def create_campaign(
             int(owner_user_id),
         ],
     )
-    if not rows:
+    if not affected:
+        return None  # name collided with an active campaign
+    campaign = ctx.sql.query_one(
+        """
+        SELECT id, discord_srv_id, name, party_name, system, description,
+               timezone, owner_user_id, status, created_at, updated_at
+          FROM dnd_campaigns
+         WHERE discord_srv_id = %s AND LOWER(name) = LOWER(%s) AND status <> 'archived'
+        """,
+        [int(ctx.server_id), str(name)[:200]],
+    )
+    if not campaign:
         return None
-    campaign = rows[0]
     ctx.sql.execute(
         """
         INSERT INTO dnd_campaign_settings (campaign_id) VALUES (%s)

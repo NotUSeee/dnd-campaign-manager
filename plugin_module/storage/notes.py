@@ -10,12 +10,10 @@ def create_note(
     body: str,
     author_user_id: str,
 ) -> Optional[Dict[str, Any]]:
-    rows = ctx.sql.query(
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_dm_notes (campaign_id, discord_srv_id, title, body, author_user_id)
         VALUES (%s, %s, %s, %s, %s)
-        RETURNING id, campaign_id, discord_srv_id, title, body, author_user_id,
-                  created_at, updated_at
         """,
         [
             int(campaign_id),
@@ -25,7 +23,18 @@ def create_note(
             int(author_user_id),
         ],
     )
-    return rows[0] if rows else None
+    if not affected:
+        return None
+    return ctx.sql.query_one(
+        """
+        SELECT id, campaign_id, discord_srv_id, title, body, author_user_id,
+               created_at, updated_at
+          FROM dnd_dm_notes
+         WHERE campaign_id = %s AND author_user_id = %s AND title = %s
+         ORDER BY id DESC LIMIT 1
+        """,
+        [int(campaign_id), int(author_user_id), str(title)[:200]],
+    )
 
 
 def get_note(ctx, note_id: int) -> Optional[Dict[str, Any]]:

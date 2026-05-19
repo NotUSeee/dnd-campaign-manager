@@ -14,7 +14,8 @@ def create_draft(
     cliffhanger: str,
     author_user_id: str,
 ) -> Optional[Dict[str, Any]]:
-    rows = ctx.sql.query(
+    # INSERT/UPDATE then SELECT-back via the UNIQUE(session_id) index.
+    ctx.sql.execute(
         """
         INSERT INTO dnd_recaps (
             session_id, campaign_id, discord_srv_id, title, summary,
@@ -27,10 +28,6 @@ def create_draft(
                 highlights = EXCLUDED.highlights,
                 loot = EXCLUDED.loot,
                 cliffhanger = EXCLUDED.cliffhanger
-        RETURNING id, session_id, campaign_id, discord_srv_id, title, summary,
-                  highlights, loot, cliffhanger, dm_notes, status,
-                  posted_channel_id, posted_message_id, author_user_id,
-                  created_at, posted_at
         """,
         [
             int(session_id),
@@ -44,7 +41,17 @@ def create_draft(
             int(author_user_id),
         ],
     )
-    return rows[0] if rows else None
+    return ctx.sql.query_one(
+        """
+        SELECT id, session_id, campaign_id, discord_srv_id, title, summary,
+               highlights, loot, cliffhanger, dm_notes, status,
+               posted_channel_id, posted_message_id, author_user_id,
+               created_at, posted_at
+          FROM dnd_recaps
+         WHERE session_id = %s
+        """,
+        [int(session_id)],
+    )
 
 
 def get_recap(ctx, recap_id: int) -> Optional[Dict[str, Any]]:

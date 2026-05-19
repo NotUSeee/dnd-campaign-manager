@@ -19,16 +19,13 @@ def create_npc(
 ) -> Optional[Dict[str, Any]]:
     if visibility not in VALID_VISIBILITIES:
         visibility = "public"
-    rows = ctx.sql.query(
+    affected = ctx.sql.execute(
         """
         INSERT INTO dnd_npcs (
             campaign_id, discord_srv_id, name, role, location,
             public_notes, secret_notes, visibility, added_by_user_id
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id, campaign_id, discord_srv_id, name, role, location,
-                  public_notes, secret_notes, visibility, added_by_user_id,
-                  created_at, updated_at
         """,
         [
             int(campaign_id),
@@ -42,7 +39,19 @@ def create_npc(
             int(added_by_user_id),
         ],
     )
-    return rows[0] if rows else None
+    if not affected:
+        return None
+    return ctx.sql.query_one(
+        """
+        SELECT id, campaign_id, discord_srv_id, name, role, location,
+               public_notes, secret_notes, visibility, added_by_user_id,
+               created_at, updated_at
+          FROM dnd_npcs
+         WHERE campaign_id = %s AND added_by_user_id = %s AND name = %s
+         ORDER BY id DESC LIMIT 1
+        """,
+        [int(campaign_id), int(added_by_user_id), str(name)[:200]],
+    )
 
 
 def get_npc(ctx, npc_id: int) -> Optional[Dict[str, Any]]:
