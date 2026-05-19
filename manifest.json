@@ -1,7 +1,7 @@
 {
   "id": "dnd_campaign_manager",
   "name": "D&D Campaign Manager",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Schedule sessions, track RSVPs, post recaps, and organize campaign notes — for D&D, Pathfinder, and any tabletop campaign run on Discord.",
   "author": "MMO Maid",
   "license": "MIT",
@@ -19,6 +19,7 @@
     {
       "name": "campaign",
       "description": "Manage your tabletop campaign",
+      "defer_on_dispatch": false,
       "options": [
         {
           "type": 1,
@@ -56,6 +57,7 @@
     {
       "name": "session",
       "description": "Schedule and manage campaign sessions",
+      "defer_on_dispatch": false,
       "options": [
         {
           "type": 1,
@@ -138,6 +140,7 @@
     {
       "name": "quest",
       "description": "Manage the campaign quest log",
+      "defer_on_dispatch": false,
       "options": [
         {
           "type": 1,
@@ -290,6 +293,7 @@
     {
       "name": "dmnotes",
       "description": "DM-only campaign notes — replies are always private",
+      "defer_on_dispatch": false,
       "options": [
         {
           "type": 1,

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.3 — Opt out of auto-defer for modal-sending commands
+
+Discord forbids `send_modal` after an interaction has been deferred —
+modals can only be the initial response. The MMO Maid bot auto-defers
+every marketplace slash command on dispatch, which made `/campaign create`,
+`/session schedule`, `/session recap`, `/quest update`, and `/dmnotes add`
+hang forever on "thinking…" because their `send_modal` calls got rejected
+by Discord (HTTP 400, silent).
+
+This release opts the four affected top-level commands out of the auto-
+defer via the new `defer_on_dispatch: false` manifest flag (added to the
+MMO Maid platform alongside this release). Subcommands that don't send
+modals still work — they're now expected to be fast (< 3 s) or call
+`ctx.interaction.defer(ephemeral=True)` themselves if they're slow.
+
+- `manifest.json`: add `defer_on_dispatch: false` to `campaign`, `session`,
+  `quest`, `dmnotes`. `npc` and `party` keep the default (true) — none of
+  their subcommands send modals directly.
+
 ## 1.0.2 — Subcommand dispatch fix
 
 - `core/option_reader.get_subcommand` no longer requires Discord's
