@@ -40,6 +40,23 @@ def test_get_option_int_works_when_subcommand_missing_type():
     assert option_reader.get_option_int(event, "campaign_id") == 42
 
 
+def test_get_subcommand_falls_back_to_command_options():
+    """When the platform's privacy filter strips `options` but keeps the
+    legacy `command_options` alias, we should still find the subcommand."""
+    event = {"options": None, "command_options": [
+        {"name": "create", "type": 1, "options": []}
+    ]}
+    assert option_reader.get_subcommand(event) == "create"
+
+
+def test_get_option_int_falls_back_to_command_options():
+    event = {"options": None, "command_options": [{
+        "name": "settings", "type": 1,
+        "options": [{"name": "campaign_id", "type": 4, "value": "42"}],
+    }]}
+    assert option_reader.get_option_int(event, "campaign_id") == 42
+
+
 def test_get_option_int_extracts_value():
     event = {"options": [{"name": "info", "type": 1, "options": [
         {"name": "campaign_id", "type": 4, "value": "42"}

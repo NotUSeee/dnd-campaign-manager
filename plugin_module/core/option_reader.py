@@ -4,8 +4,21 @@ Discord delivers slash command options as a nested list of dicts:
     [{"name": "subcmd", "type": 1, "options": [{"name": "campaign_id", "type": 4, "value": 5}, ...]}]
 
 These helpers flatten that into easy lookups.
+
+The platform exposes the options tree under TWO keys, ``options`` (canonical
+SDK 0.5.3+) and ``command_options`` (legacy alias). Some platform versions
+have a privacy-filter whitelist that drops one of them — we read ``options``
+first and fall back to ``command_options`` so we work on every deployment.
 """
 from typing import Any, Dict, List, Optional
+
+
+def _opts(event: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return the slash-command options list, tolerating either key name."""
+    raw = event.get("options")
+    if raw is None:
+        raw = event.get("command_options")
+    return list(raw or [])
 
 
 def get_subcommand(event: Dict[str, Any]) -> Optional[str]:
@@ -17,7 +30,7 @@ def get_subcommand(event: Dict[str, Any]) -> Optional[str]:
     discord.py's data dict has been observed to omit the SUB_COMMAND
     ``type: 1`` marker in some delivery paths, breaking a type-based check.
     """
-    options = event.get("options") or []
+    options = _opts(event)
     if not options:
         return None
     first = options[0]
@@ -43,7 +56,7 @@ def _subcommand_options(event: Dict[str, Any]) -> List[Dict[str, Any]]:
     a ``value`` field, treat it as a subcommand wrapper and descend into
     its ``options``.
     """
-    options = event.get("options") or []
+    options = _opts(event)
     if not options:
         return []
     first = options[0]

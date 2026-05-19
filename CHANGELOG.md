@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.4 — Fall back to legacy `command_options` key
+
+The MMO Maid platform's `meta_only` privacy filter (the default for
+installs that don't request `events:message_content`) strips fields not
+in an explicit whitelist. Older platform versions whitelisted the legacy
+`command_options` alias but NOT the canonical `options` key — even though
+the bot writes both with identical values. That made `event.get("options")`
+return `None` on every slash-command invocation, breaking every subcommand
+dispatcher with "Unknown subcommand".
+
+`core/option_reader._opts(event)` now reads `options` first and falls back
+to `command_options`. Two new tests cover the missing-canonical-key case.
+
+Pairs with a platform patch adding both `options` and `member` to the
+meta-only whitelist, but the plugin-side fallback means the fix works
+even before that platform patch ships.
+
 ## 1.0.3 — Opt out of auto-defer for modal-sending commands
 
 Discord forbids `send_modal` after an interaction has been deferred —
