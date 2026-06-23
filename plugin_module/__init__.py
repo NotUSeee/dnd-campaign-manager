@@ -18,4 +18,5 @@ from plugin_module.handlers import (  # noqa: E402,F401  (imported for side-effe
     npc,
     party,
     notes,
+    dashboard,
 )

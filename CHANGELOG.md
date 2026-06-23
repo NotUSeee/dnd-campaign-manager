@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0 — Web dashboard
+
+A custom web dashboard for the plugin's marketplace page (Dashboard tab).
+
+- New iframe dashboard (`dashboard/index.html`) — a themed campaign overview:
+  next session + RSVP breakdown, quest log, party roster, party composition,
+  a sessions-played chronicle, latest recaps, and notable NPCs. Hand-rolled
+  SVG charts (no external dependencies).
+- New `dashboard.get_overview` handler (`handlers/dashboard.py`) — one read-only
+  RPC that powers the whole page. Surfaces PUBLIC quests/NPCs only; never sends
+  DM secrets. Per-section error isolation so one bad query degrades a single
+  panel, not the page.
+- Campaign picker for servers running more than one campaign.
+- `dashboard_manifest.json` (iframe mode) + packaging updated to bundle the
+  dashboard. Handler registration is guarded so the plugin still imports on
+  older local SDKs that predate `on_dashboard`.
+
 ## 1.0.6 — Tolerate ISO date strings from platform SQL results
 
 The platform's SQL surface returns ``TIMESTAMPTZ`` columns as ISO 8601

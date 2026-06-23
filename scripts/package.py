@@ -19,12 +19,13 @@ OUT_ZIP = REPO_ROOT / "dnd_campaign_manager.zip"
 INCLUDE_TOP_LEVEL = [
     "__main__.py",
     "manifest.json",
+    "dashboard_manifest.json",
     "requirements.txt",
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
 ]
-INCLUDE_DIRS = ["plugin_module"]
+INCLUDE_DIRS = ["plugin_module", "dashboard"]
 
 EXCLUDE_DIR_NAMES = {
     "__pycache__", ".pytest_cache", ".mypy_cache",

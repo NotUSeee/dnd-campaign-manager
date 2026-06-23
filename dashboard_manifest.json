@@ -1,0 +1,6 @@
+{
+  "mode": "iframe",
+  "pages": [
+    { "id": "overview", "title": "Campaign", "src": "index.html" }
+  ]
+}

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign Dashboard</title>
+<style>
+  :root {
+    --bg:      #0c0a13;
+    --panel:   #16121f;
+    --panel-2: #1c1726;
+    --ink:     #efe7d6;          /* parchment text */
+    --muted:   #9b91a8;
+    --line:    rgba(217,178,95,.16);
+    --gold:    #e3c074;
+    --gold-2:  #f3dd9e;
+    --ember:   #e0734b;
+    --emerald: #5fd6a0;
+    --crimson: #e0556b;
+    --arcane:  #9b7bff;
+    --amber:   #ffc24b;
+    --grad-gold: linear-gradient(135deg, #f3dd9e 0%, #e3c074 45%, #c79a4a 100%);
+    --serif: 'Cinzel', 'Trajan Pro', 'Optima', 'Georgia', 'Times New Roman', serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --shadow: 0 14px 40px rgba(0,0,0,.5);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--sans); color: var(--ink); line-height: 1.5; padding: 24px;
+    background:
+      radial-gradient(1100px 460px at 12% -8%, rgba(227,192,116,.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(155,123,255,.10), transparent 55%),
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  a { color: var(--gold); }
+
+  /* ── Header ── */
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+          padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--line); position: relative; }
+  .head::after { content:""; position:absolute; left:0; bottom:-1px; width:160px; height:2px; background: var(--grad-gold); border-radius: 2px; }
+  .brand { display: flex; align-items: center; gap: 15px; }
+  .crest { width: 50px; height: 50px; flex: none; filter: drop-shadow(0 4px 10px rgba(227,192,116,.35)); }
+  .ttl { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; letter-spacing: .04em; margin: 0; color: var(--gold-2); }
+  .meta { display: flex; align-items: center; gap: 10px; margin-top: 4px; color: var(--muted); font-size: .82rem; flex-wrap: wrap; }
+  .pill { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; }
+  .pill.active { color: #0c0a13; background: var(--grad-gold); }
+  .pill.paused { color: var(--amber); background: rgba(255,194,75,.14); }
+  .pill.archived { color: var(--muted); background: rgba(255,255,255,.07); }
+  .dot { color: var(--line); }
+  .controls { display: flex; align-items: center; gap: 10px; }
+  select.camp {
+    background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px; font-family: var(--serif); font-size: .9rem; letter-spacing: .03em; color-scheme: dark; cursor: pointer;
+  }
+  .icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2);
+              color: var(--gold); cursor: pointer; transition: .18s; }
+  .icon-btn:hover { border-color: var(--gold); transform: translateY(-1px); }
+  .icon-btn.spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Cards ── */
+  .card { position: relative; background: linear-gradient(180deg, var(--panel), var(--panel-2));
+          border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  .card-h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .card-t { font-family: var(--serif); font-size: .98rem; letter-spacing: .05em; color: var(--gold-2); text-transform: uppercase; }
+  .card-s { font-size: .74rem; color: var(--muted); }
+
+  /* ── KPIs ── */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+  .kpi { display: flex; align-items: center; gap: 13px; padding: 16px; }
+  .kpi .ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex: none;
+             background: rgba(227,192,116,.10); border: 1px solid var(--line); font-size: 1.2rem; }
+  .kpi .lbl { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .kpi .val { font-family: var(--serif); font-size: 1.7rem; font-weight: 700; color: var(--ink); line-height: 1.1; font-variant-numeric: tabular-nums; }
+
+  .grid { display: grid; gap: 14px; margin-bottom: 14px; }
+  .grid.split { grid-template-columns: 1.5fr 1fr; }
+
+  /* ── Next session ── */
+  .ns { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .ns .when { flex: 1; min-width: 180px; }
+  .ns .ttl2 { font-family: var(--serif); font-size: 1.2rem; color: var(--ink); margin-bottom: 4px; }
+  .ns .date { color: var(--gold); font-size: .9rem; }
+  .ns .cd { display: flex; gap: 10px; margin-top: 12px; }
+  .ns .cd .u { background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; text-align: center; min-width: 56px; }
+  .ns .cd .u b { display: block; font-family: var(--serif); font-size: 1.25rem; color: var(--gold-2); font-variant-numeric: tabular-nums; }
+  .ns .cd .u span { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .rsvp-legend { display: flex; flex-direction: column; gap: 7px; font-size: .82rem; }
+  .rsvp-legend .r { display: flex; align-items: center; gap: 8px; }
+  .rsvp-legend .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .rsvp-legend .n { color: var(--muted); flex: 1; } .rsvp-legend b { font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); font-size: .88rem; padding: 12px 0; }
+
+  /* ── Quest log ── */
+  .qlist { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; }
+  .q { display: flex; align-items: center; gap: 10px; }
+  .q .qt { flex: 1; font-size: .88rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qbadge { font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; }
+  .s-active { color: var(--amber); background: rgba(255,194,75,.14); }
+  .s-completed { color: var(--emerald); background: rgba(95,214,160,.14); }
+  .s-failed { color: var(--crimson); background: rgba(224,85,107,.14); }
+  .s-abandoned { color: var(--muted); background: rgba(255,255,255,.06); }
+
+  /* ── Party roster ── */
+  .roster { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pc { display: flex; align-items: center; gap: 11px; background: var(--panel-2); border: 1px solid var(--line);
+        border-radius: 11px; padding: 10px 12px; }
+  .pc .av { width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; flex: none;
+            font-family: var(--serif); font-weight: 700; color: #0c0a13; }
+  .pc .nm { font-family: var(--serif); font-size: .96rem; color: var(--ink); }
+  .pc .cl { font-size: .74rem; color: var(--muted); }
+  .lvl { margin-left: auto; text-align: center; flex: none; }
+  .lvl b { display: block; font-family: var(--serif); font-size: 1.15rem; color: var(--gold-2); line-height: 1; }
+  .lvl span { font-size: .58rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+
+  /* ── Composition / chronicle ── */
+  .donut-wrap { display: flex; align-items: center; gap: 16px; }
+  .legend { display: flex; flex-direction: column; gap: 8px; flex: 1; font-size: .82rem; }
+  .legend .r { display: flex; align-items: center; gap: 8px; }
+  .legend .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .legend .n { color: var(--muted); flex: 1; } .legend b { font-variant-numeric: tabular-nums; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; padding-top: 8px; }
+  .bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bars .bar { width: 100%; max-width: 38px; border-radius: 6px 6px 0 0; background: var(--grad-gold); height: 0; transition: height .9s cubic-bezier(.2,.7,.2,1); box-shadow: 0 0 16px rgba(227,192,116,.2); }
+  .bars .bl { font-size: .68rem; color: var(--muted); } .bars .bv { font-size: .66rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+  /* ── NPC / recap lists ── */
+  .list { display: flex; flex-direction: column; }
+  .li { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .li:first-child { border-top: 0; }
+  .li .mk { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: none;
+            background: rgba(155,123,255,.12); border: 1px solid var(--line); color: var(--arcane); font-size: .85rem; }
+  .li .nm { font-size: .9rem; color: var(--ink); } .li .sub { font-size: .73rem; color: var(--muted); }
+  .li .rt { margin-left: auto; font-size: .72rem; color: var(--muted); }
+
+  .foot { display: flex; justify-content: space-between; color: var(--muted); font-size: .73rem; padding: 6px 2px; margin-top: 4px; }
+
+  @media (max-width: 880px) {
+    .kpis { grid-template-columns: repeat(2,1fr); }
+    .grid.split { grid-template-columns: 1fr; }
+    .roster { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="head">
+    <div class="brand">
+      <svg class="crest" viewBox="0 0 100 100" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3dd9e"/><stop offset="1" stop-color="#c79a4a"/></linearGradient></defs>
+        <polygon points="50,4 89,27 89,73 50,96 11,73 11,27" fill="none" stroke="url(#g)" stroke-width="3"/>
+        <polygon points="50,16 78,33 78,67 50,84 22,67 22,33" fill="rgba(227,192,116,.08)" stroke="url(#g)" stroke-width="1.5"/>
+        <text x="50" y="62" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="url(#g)">20</text>
+      </svg>
+      <div>
+        <h1 class="ttl" id="c-name">Campaign</h1>
+        <div class="meta">
+          <span id="c-system">D&amp;D 5e</span><span class="dot">◆</span>
+          <span id="c-party">The Party</span><span class="dot">◆</span>
+          <span class="pill active" id="c-status">Active</span>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <select class="camp" id="camp-select" style="display:none"></select>
+      <button class="icon-btn" id="refresh" title="Refresh">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- Next session + Quest log -->
+  <div class="grid split">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Next Session</span><span class="card-s" id="rsvp-total"></span></div>
+      <div id="ns-body"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Quest Log</span><span class="card-s" id="quest-sub"></span></div>
+      <div class="donut-wrap">
+        <svg id="quest-donut" width="120" height="120" viewBox="0 0 120 120"></svg>
+        <div class="legend" id="quest-legend"></div>
+      </div>
+      <div class="qlist" id="quest-list"></div>
+    </div>
+  </div>
+
+  <!-- Party + composition -->
+  <div class="grid split">
+    <div class="card">
+      <div class="card-h"><span class="card-t">The Party</span><span class="card-s" id="party-sub"></span></div>
+      <div class="roster" id="roster"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Party Composition</span></div>
+      <div class="donut-wrap">
+        <svg id="class-donut" width="120" height="120" viewBox="0 0 120 120"></svg>
+        <div class="legend" id="class-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chronicle + NPCs -->
+  <div class="grid split">
+    <div class="card">
+      <div class="card-h"><span class="card-t">Campaign Chronicle</span><span class="card-s">Sessions played</span></div>
+      <div class="bars" id="timeline"></div>
+      <div class="card-h" style="margin:18px 0 8px"><span class="card-t" style="font-size:.82rem">Latest Recaps</span></div>
+      <div class="list" id="recaps"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Notable NPCs</span><span class="card-s" id="npc-sub"></span></div>
+      <div class="list" id="npcs"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span id="updated">—</span>
+    <span>D&amp;D Campaign Manager</span>
+  </div>
+</div>
+
+<script src="/static/yourbot-sdk.js"></script>
+<script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Calls one handler:  YourBotSDK.rpc("get_overview", { campaign_id })
+   Implemented in plugin_module/handlers/dashboard.py. Falls back to demo data
+   so the dashboard always looks complete (and renders standalone via file://).
+   ──────────────────────────────────────────────────────────────────────────── */
+var DEMO = {
+  campaigns: [{ id: 1, name: "Curse of the Crimson Throne", system: "D&D 5e", status: "active" }],
+  campaign: { id: 1, name: "Curse of the Crimson Throne", party_name: "The Emberwardens", system: "D&D 5e", status: "active" },
+  stats: { party_size: 5, sessions_played: 21, active_quests: 3, npc_count: 12, avg_level: 5.6, attendance_rate: 0.92 },
+  next_session: { title: "The Sunken Crypt", session_number: 22, starts_at: _inDays(3, 19), rsvp: { attending: 4, maybe: 1, unavailable: 0 } },
+  party: [
+    { name: "Thorin Oakenshield", cls: "Fighter", level: 6 },
+    { name: "Lyra Moonwhisper", cls: "Wizard", level: 6 },
+    { name: "Pip Underfoot", cls: "Rogue", level: 5 },
+    { name: "Sister Auria", cls: "Cleric", level: 6 },
+    { name: "Kael Stormborn", cls: "Ranger", level: 5 }
+  ],
+  class_breakdown: [{ name: "Fighter", value: 1 }, { name: "Wizard", value: 1 }, { name: "Rogue", value: 1 }, { name: "Cleric", value: 1 }, { name: "Ranger", value: 1 }],
+  quests: { active: 3, completed: 5, failed: 1, abandoned: 0, recent: [
+    { title: "Retrieve the Sunstone of Var", status: "active" },
+    { title: "Clear the Goblin Warren", status: "active" },
+    { title: "Find the missing Lord Vaelin", status: "active" }
+  ] },
+  timeline: { labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"], values: [2, 3, 4, 3, 5, 4] },
+  recaps: [
+    { title: "The Goblin Ambush", posted_at: _inDays(-9) },
+    { title: "Into the Underdark", posted_at: _inDays(-16) }
+  ],
+  npcs: [
+    { name: "Elaria the Sage", role: "Quest Giver", location: "Tower of Mages" },
+    { name: "Grimtooth", role: "Merchant", location: "Market District" },
+    { name: "Lord Vaelin", role: "Noble (missing)", location: "Castle Var" }
+  ]
+};
+function _inDays(d, hour) { var t = new Date(); t.setDate(t.getDate() + d); if (hour != null) t.setHours(hour, 0, 0, 0); return t.toISOString(); }
+
+var CLASS_COLORS = {
+  Fighter: "#e0556b", Barbarian: "#c0392b", Wizard: "#4f8cff", Sorcerer: "#e0734b",
+  Warlock: "#9b7bff", Rogue: "#8b93ad", Ranger: "#5fd6a0", Druid: "#3fa34d",
+  Cleric: "#e3c074", Paladin: "#f3dd9e", Bard: "#d56fb0", Monk: "#38e1ff", Artificer: "#cba14a"
+};
+var RSVP_COLORS = { attending: "#5fd6a0", maybe: "#ffc24b", unavailable: "#e0556b" };
+var QUEST_COLORS = { active: "#ffc24b", completed: "#5fd6a0", failed: "#e0556b", abandoned: "#6b6878" };
+
+var $ = function (s) { return document.querySelector(s); };
+function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+function fmt(n) { if (n == null) return "–"; if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k"; return String(n); }
+function initials(s) { var p = String(s || "?").trim().split(/\s+/); return ((p[0] || "")[0] || "?").toUpperCase() + ((p[1] || "")[0] || "").toUpperCase(); }
+function colorFor(cls) { return CLASS_COLORS[cls] || "#b9a86a"; }
+
+function countUp(el, to, dec) {
+  var fin = dec ? (Math.round(to * 10) / 10).toFixed(1) : fmt(Math.round(to));
+  var t0 = null, dur = 700;
+  function step(t) { if (!t0) t0 = t; var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = to * e;
+    el.textContent = dec ? (Math.round(v * 10) / 10).toFixed(1) : fmt(Math.round(v)); if (k < 1) requestAnimationFrame(step); else el.textContent = fin; }
+  requestAnimationFrame(step); setTimeout(function () { el.textContent = fin; }, dur + 150);
+}
+
+/* SVG donut */
+function donut(svg, items, colorMap) {
+  items = (items || []).filter(function (i) { return (i.value || 0) > 0; });
+  var total = items.reduce(function (a, b) { return a + (b.value || 0); }, 0);
+  var cx = 60, cy = 60, r = 44, sw = 15, a0 = -Math.PI / 2, html = "";
+  if (!total) { svg.innerHTML = '<circle cx="60" cy="60" r="44" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="15"/>'; return; }
+  items.forEach(function (it) {
+    var frac = it.value / total, a1 = a0 + frac * Math.PI * 2, large = frac > 0.5 ? 1 : 0;
+    var x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0), x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    var col = (colorMap && (colorMap[it.key] || colorMap[it.name])) || it.color || "#b9a86a";
+    html += '<path d="M ' + x0.toFixed(1) + " " + y0.toFixed(1) + " A " + r + " " + r + " 0 " + large + " 1 " + x1.toFixed(1) + " " + y1.toFixed(1) +
+            '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="butt"/>';
+    a0 = a1;
+  });
+  svg.innerHTML = html +
+    '<text x="60" y="56" text-anchor="middle" fill="#efe7d6" font-family="Georgia,serif" font-size="20" font-weight="700">' + total + '</text>' +
+    '<text x="60" y="72" text-anchor="middle" fill="#9b91a8" font-size="8.5" letter-spacing="1">TOTAL</text>';
+}
+function legend(host, items, colorMap, fmtLabel) {
+  host.innerHTML = "";
+  (items || []).forEach(function (it) {
+    var col = (colorMap && (colorMap[it.key] || colorMap[it.name])) || it.color || "#b9a86a";
+    var row = document.createElement("div"); row.className = "r";
+    row.innerHTML = '<span class="sw" style="background:' + col + '"></span><span class="n">' + esc(fmtLabel ? fmtLabel(it.name) : it.name) + '</span><b>' + (it.value || 0) + '</b>';
+    host.appendChild(row);
+  });
+}
+
+function renderKpis(s) {
+  s = s || {};
+  var items = [
+    { ic: "🛡️", lbl: "Party", val: s.party_size || 0 },
+    { ic: "📜", lbl: "Sessions Played", val: s.sessions_played || 0 },
+    { ic: "⚔️", lbl: "Active Quests", val: s.active_quests || 0 },
+    { ic: "✦", lbl: "Avg Level", val: s.avg_level || 0, dec: true }
+  ];
+  var host = $("#kpis"); host.innerHTML = "";
+  items.forEach(function (k) {
+    var el = document.createElement("div"); el.className = "card kpi";
+    el.innerHTML = '<div class="ic">' + k.ic + '</div><div><div class="lbl">' + k.lbl + '</div><div class="val">0</div></div>';
+    host.appendChild(el);
+    countUp(el.querySelector(".val"), k.val, k.dec);
+  });
+}
+
+function renderNextSession(ns) {
+  var body = $("#ns-body"), tot = $("#rsvp-total");
+  if (!ns) { body.innerHTML = '<div class="empty">No session scheduled. Use <b>/session schedule</b> to set the next adventure.</div>'; tot.textContent = ""; return; }
+  var d = new Date(ns.starts_at), now = new Date();
+  var diff = Math.max(0, d - now), days = Math.floor(diff / 864e5), hrs = Math.floor((diff % 864e5) / 36e5);
+  var dateStr = d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  var rsvp = ns.rsvp || {};
+  var rtot = (rsvp.attending || 0) + (rsvp.maybe || 0) + (rsvp.unavailable || 0);
+  tot.textContent = rtot ? (rtot + " responses") : "";
+  body.innerHTML =
+    '<div class="ns"><div class="when">' +
+      '<div class="ttl2">' + esc(ns.title) + (ns.session_number ? ' <span style="color:var(--muted);font-size:.8rem">#' + ns.session_number + '</span>' : '') + '</div>' +
+      '<div class="date">' + esc(dateStr) + '</div>' +
+      '<div class="cd"><div class="u"><b>' + days + '</b><span>Days</span></div><div class="u"><b>' + hrs + '</b><span>Hours</span></div></div>' +
+    '</div>' +
+    '<svg id="rsvp-donut" width="110" height="110" viewBox="0 0 120 120"></svg>' +
+    '<div class="rsvp-legend" id="rsvp-legend"></div></div>';
+  var items = [
+    { key: "attending", name: "Attending", value: rsvp.attending || 0 },
+    { key: "maybe", name: "Maybe", value: rsvp.maybe || 0 },
+    { key: "unavailable", name: "Can't make it", value: rsvp.unavailable || 0 }
+  ];
+  donut($("#rsvp-donut"), items.map(function (i) { return { name: i.key, value: i.value }; }), RSVP_COLORS);
+  legend($("#rsvp-legend"), items, { Attending: RSVP_COLORS.attending, Maybe: RSVP_COLORS.maybe, "Can't make it": RSVP_COLORS.unavailable });
+}
+
+function renderQuests(q) {
+  q = q || {};
+  var seg = [
+    { name: "active", value: q.active || 0 }, { name: "completed", value: q.completed || 0 },
+    { name: "failed", value: q.failed || 0 }, { name: "abandoned", value: q.abandoned || 0 }
+  ];
+  donut($("#quest-donut"), seg, QUEST_COLORS);
+  var labelMap = { active: "Active", completed: "Completed", failed: "Failed", abandoned: "Abandoned" };
+  legend($("#quest-legend"), seg.map(function (s) { return { name: s.name, value: s.value }; }), QUEST_COLORS, function (n) { return labelMap[n] || n; });
+  $("#quest-sub").textContent = ((q.active || 0) + (q.completed || 0) + (q.failed || 0) + (q.abandoned || 0)) + " total";
+  var list = $("#quest-list"); list.innerHTML = "";
+  var recent = q.recent || [];
+  if (!recent.length) { list.innerHTML = '<div class="empty">No active quests.</div>'; return; }
+  recent.forEach(function (it) {
+    var row = document.createElement("div"); row.className = "q";
+    row.innerHTML = '<span class="qt">' + esc(it.title) + '</span><span class="qbadge s-' + esc(it.status) + '">' + esc(it.status) + '</span>';
+    list.appendChild(row);
+  });
+}
+
+function renderParty(party, stats) {
+  var host = $("#roster"); host.innerHTML = ""; party = party || [];
+  $("#party-sub").textContent = stats && stats.attendance_rate != null ? (Math.round(stats.attendance_rate * 100) + "% attendance") : (party.length + " adventurers");
+  if (!party.length) { host.innerHTML = '<div class="empty">No party yet. Add players with <b>/party add</b>.</div>'; return; }
+  party.forEach(function (m) {
+    var col = colorFor(m.cls);
+    var el = document.createElement("div"); el.className = "pc";
+    el.innerHTML =
+      '<div class="av" style="background:linear-gradient(135deg,' + col + ',' + col + 'aa)">' + esc(initials(m.name)) + '</div>' +
+      '<div><div class="nm">' + esc(m.name) + '</div><div class="cl">' + (m.cls ? esc(m.cls) : "Adventurer") + '</div></div>' +
+      '<div class="lvl"><b>' + (m.level != null ? m.level : "–") + '</b><span>Level</span></div>';
+    host.appendChild(el);
+  });
+}
+
+function renderComposition(cb) {
+  cb = (cb || []).slice();
+  donut($("#class-donut"), cb.map(function (c) { return { name: c.name, value: c.value, color: colorFor(c.name) }; }), CLASS_COLORS);
+  legend($("#class-legend"), cb, CLASS_COLORS);
+  if (!cb.length) $("#class-legend").innerHTML = '<div class="empty">—</div>';
+}
+
+function renderTimeline(tl) {
+  var host = $("#timeline"); host.innerHTML = ""; tl = tl || {};
+  var labels = tl.labels || [], vals = tl.values || [];
+  if (!labels.length) { host.innerHTML = '<div class="empty">No completed sessions yet.</div>'; return; }
+  var max = Math.max.apply(null, vals) || 1;
+  labels.forEach(function (l, i) {
+    var col = document.createElement("div"); col.className = "col";
+    col.innerHTML = '<span class="bv">' + (vals[i] || 0) + '</span><div class="bar"></div><span class="bl">' + esc(l) + '</span>';
+    host.appendChild(col);
+    var bar = col.querySelector(".bar");
+    requestAnimationFrame(function () { bar.style.height = Math.max(4, (vals[i] || 0) / max * 110) + "px"; });
+  });
+}
+
+function renderList(host, items, mk, emptyMsg) {
+  host.innerHTML = ""; items = items || [];
+  if (!items.length) { host.innerHTML = '<div class="empty">' + emptyMsg + '</div>'; return; }
+  items.forEach(function (it) { host.appendChild(mk(it)); });
+}
+
+function renderRecaps(recaps) {
+  renderList($("#recaps"), recaps, function (r) {
+    var li = document.createElement("div"); li.className = "li";
+    var when = r.posted_at ? new Date(r.posted_at).toLocaleDateString([], { month: "short", day: "numeric" }) : "";
+    li.innerHTML = '<div class="mk" style="color:var(--gold);background:rgba(227,192,116,.10)">📖</div>' +
+      '<div><div class="nm">' + esc(r.title) + '</div></div><div class="rt">' + esc(when) + '</div>';
+    return li;
+  }, "No recaps posted yet.");
+}
+
+function renderNpcs(npcs) {
+  $("#npc-sub").textContent = npcs && npcs.length ? (npcs.length + " shown") : "";
+  renderList($("#npcs"), npcs, function (n) {
+    var li = document.createElement("div"); li.className = "li";
+    var sub = [n.role, n.location].filter(Boolean).map(esc).join(" · ");
+    li.innerHTML = '<div class="mk">' + esc(initials(n.name)) + '</div><div><div class="nm">' + esc(n.name) + '</div>' +
+      (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
+    return li;
+  }, "No public NPCs yet.");
+}
+
+function renderCampaignHeader(c) {
+  if (!c) return;
+  $("#c-name").textContent = c.name || "Campaign";
+  $("#c-system").textContent = c.system || "D&D 5e";
+  $("#c-party").textContent = c.party_name || "The Party";
+  var st = (c.status || "active").toLowerCase();
+  var pill = $("#c-status"); pill.className = "pill " + st; pill.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+}
+
+function renderCampaignPicker(list, currentId) {
+  var sel = $("#camp-select");
+  if (!list || list.length < 2) { sel.style.display = "none"; return; }
+  sel.style.display = ""; sel.innerHTML = "";
+  list.forEach(function (c) {
+    var o = document.createElement("option"); o.value = c.id; o.textContent = c.name + (c.status !== "active" ? " (" + c.status + ")" : "");
+    if (String(c.id) === String(currentId)) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function render(d) {
+  d = d || {};
+  renderCampaignHeader(d.campaign);
+  renderCampaignPicker(d.campaigns, d.campaign && d.campaign.id);
+  renderKpis(d.stats);
+  renderNextSession(d.next_session);
+  renderQuests(d.quests);
+  renderParty(d.party, d.stats);
+  renderComposition(d.class_breakdown);
+  renderTimeline(d.timeline);
+  renderRecaps(d.recaps);
+  renderNpcs(d.npcs);
+  $("#updated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+var _campaignId = null;
+function load() {
+  var btn = $("#refresh"); btn.classList.add("spin");
+  function done(data) { render(data); btn.classList.remove("spin"); }
+  if (window.YourBotSDK) {
+    YourBotSDK.ready(function () {
+      var p = {}; if (_campaignId) p.campaign_id = _campaignId;
+      YourBotSDK.rpc("get_overview", p)
+        .then(function (data) { done(data && data.campaign ? data : DEMO); })
+        .catch(function () { done(DEMO); });
+    });
+  } else {
+    setTimeout(function () { done(DEMO); }, 200);
+  }
+}
+
+$("#refresh").addEventListener("click", load);
+$("#camp-select").addEventListener("change", function () { _campaignId = this.value; load(); });
+load();
+</script>
+</body>
+</html>
